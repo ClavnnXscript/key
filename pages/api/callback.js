@@ -43,8 +43,8 @@ export default async function handler(req, res) {
       
       const { data: existingKey } = await supabase
         .from('keys')
-        .select('key')
-        .eq('key', key)
+        .select('license_key')
+        .eq('license_key', key)
         .single()
       
       keyExists = !!existingKey
@@ -67,7 +67,7 @@ export default async function handler(req, res) {
       .from('keys')
       .insert([
         {
-          key: key,
+          license_key: key,
           expires_at: expiresAt.toISOString()
         }
       ])
@@ -81,7 +81,7 @@ export default async function handler(req, res) {
       })
     }
 
-    // Redirect langsung ke halaman display key (ini yang bikin UI muncul di PlatoBoost)
+    // Redirect langsung ke halaman display key
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'
     res.redirect(302, `${baseUrl}/display?key=${key}&expires=${encodeURIComponent(expiresAt.toISOString())}`)
 
