@@ -11,17 +11,16 @@ export default function DisplayKey() {
   const [copied, setCopied] = useState(false)
   const [loading, setLoading] = useState(true)
 
+  // Fetch key from API
   useEffect(() => {
     async function fetchKey() {
       if (!token) return
       try {
-        const res = await fetch(`/api/callback?token=${token}`)
+        const res = await fetch(`/api/callback?token=${token}&mode=json`)
         const data = await res.json()
 
         if (data.license_key) {
           setKey(data.license_key)
-        }
-        if (data.expires_at) {
           setExpires(data.expires_at)
         }
       } catch (err) {
@@ -34,6 +33,7 @@ export default function DisplayKey() {
     fetchKey()
   }, [token])
 
+  // countdown timer
   useEffect(() => {
     if (expires) {
       const interval = setInterval(updateTimeLeft, 1000)
