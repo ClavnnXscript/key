@@ -4,9 +4,33 @@ import Head from 'next/head'
 
 export default function DisplayKey() {
   const router = useRouter()
-  const { key, expires } = router.query
+  const [key, setKey] = useState(null)
+  const [expires, setExpires] = useState(null)
   const [timeLeft, setTimeLeft] = useState('')
   const [copied, setCopied] = useState(false)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    async function fetchKey() {
+      try {
+        const res = await fetch(`/api/callback?token=test123`) // bisa diganti token sesuai logic kamu
+        const data = await res.json()
+
+        if (data.license_key) {
+          setKey(data.license_key)
+        }
+        if (data.expires_at) {
+          setExpires(data.expires_at)
+        }
+      } catch (err) {
+        console.error("Failed to fetch key:", err)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchKey()
+  }, [])
 
   useEffect(() => {
     if (expires) {
@@ -38,7 +62,6 @@ export default function DisplayKey() {
       setCopied(true)
       setTimeout(() => setCopied(false), 2000)
     } catch (err) {
-      // Fallback for older browsers
       const textArea = document.createElement('textarea')
       textArea.value = key
       document.body.appendChild(textArea)
@@ -50,10 +73,18 @@ export default function DisplayKey() {
     }
   }
 
-  if (!key) {
+  if (loading) {
     return (
       <div style={styles.container}>
         <div style={styles.loading}>Loading...</div>
+      </div>
+    )
+  }
+
+  if (!key) {
+    return (
+      <div style={styles.container}>
+        <div style={styles.loading}>❌ No key found</div>
       </div>
     )
   }
@@ -68,7 +99,6 @@ export default function DisplayKey() {
       
       <div style={styles.container}>
         <div style={styles.card}>
-          {/* Success Icon */}
           <div style={styles.iconContainer}>
             <div style={styles.successIcon}>
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" style={styles.checkIcon}>
@@ -83,12 +113,10 @@ export default function DisplayKey() {
             Please return to the service for access, you have {timeLeft}.
           </p>
 
-          {/* Key Display */}
           <div style={styles.keyContainer}>
             <div style={styles.keyText}>{key}</div>
           </div>
 
-          {/* Copy Button */}
           <button 
             onClick={copyKey}
             style={{
@@ -103,7 +131,6 @@ export default function DisplayKey() {
             {copied ? 'Copied!' : 'Copy'}
           </button>
 
-          {/* Footer Links */}
           <div style={styles.footer}>
             <a href="#" style={styles.footerLink} onClick={(e) => e.preventDefault()}>Report</a>
             <a href="#" style={styles.footerLink} onClick={(e) => e.preventDefault()}>Terms of Service</a>
