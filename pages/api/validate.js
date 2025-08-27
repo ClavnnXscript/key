@@ -24,11 +24,14 @@ export default async function handler(req, res) {
     const { data, error } = await supabase
       .from('keys')
       .select('*')
-      .eq('license_key', key)
+      .eq('key', key)
       .single()
 
     if (error || !data) {
-      return res.status(200).json({ status: 'INVALID' })
+      // Key not found in database
+      return res.status(200).json({ 
+        status: 'INVALID' 
+      })
     }
 
     // Check if key is expired
@@ -36,7 +39,9 @@ export default async function handler(req, res) {
     const expiresAt = new Date(data.expires_at)
 
     if (now > expiresAt) {
-      return res.status(200).json({ status: 'EXPIRED' })
+      return res.status(200).json({ 
+        status: 'EXPIRED' 
+      })
     }
 
     // Key is valid and not expired
