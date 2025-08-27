@@ -5,7 +5,7 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE
 )
 
-// Generate key dengan format seperti Delta X
+// Generate key with DeltaX-like format
 function generateKey() {
   const chars = 'abcdefghijklmnopqrstuvwxyz0123456789'
   let result = 'FREE_'
@@ -20,17 +20,48 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' })
   }
 
-  const { token, mode } = req.query  // tambah mode untuk kontrol (json/redirect)
+  const { token, mode } = req.query
 
   if (!token) {
-    return res.status(400).json({ 
-      status: 'ERROR', 
-      message: 'Token is required' 
+    return res.status(400).json({
+      status: 'ERROR',
+      message: 'Token is required'
     })
   }
 
   try {
-    // Generate unique key
+    // 🔒 Check progress first
+    const { data: progress, error: progressError } = await supabase
+      .from('progress')
+      .select('*')
+      .eq('token', token)
+      .single()
+
+    if (progressError || !progress || !progress.step1_done || !progress.step2_done) {
+      return res.status(403).json({
+        status: 'ERROR',
+        message: 'You must complete all steps first'
+      })
+    }
+
+    // 🔑 Check if key already exists for this token
+    const { data: existingKey } = await supabase
+      .from('keys')
+      .select('*')
+      .eq('token', token)
+      .single()
+
+    if (existingKey) {
+      // If key already exists, return it instead of generating new one
+      if (mode === 'json') {
+        return res.status(200).json(existingKey)
+      } else {
+        const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'
+        return res.redirect(302, `${baseUrl}/display?token=${token}`)
+      }
+    }
+
+    // Generate a new unique key
     let key
     let keyExists = true
     let attempts = 0
@@ -38,25 +69,23 @@ export default async function handler(req, res) {
 
     while (keyExists && attempts < maxAttempts) {
       key = generateKey()
-      
-      const { data: existingKey } = await supabase
+      const { data: dupe } = await supabase
         .from('keys')
         .select('license_key')
         .eq('license_key', key)
         .single()
-      
-      keyExists = !!existingKey
+      keyExists = !!dupe
       attempts++
     }
 
     if (keyExists) {
-      return res.status(500).json({ 
-        status: 'ERROR', 
-        message: 'Failed to generate unique key' 
+      return res.status(500).json({
+        status: 'ERROR',
+        message: 'Failed to generate unique key'
       })
     }
 
-    // Set expiry 24h
+    // Expire in 24h
     const expiresAt = new Date()
     expiresAt.setHours(expiresAt.getHours() + 24)
 
@@ -66,6 +95,7 @@ export default async function handler(req, res) {
       .insert([
         {
           license_key: key,
+          token: token,
           expires_at: expiresAt.toISOString()
         }
       ])
@@ -74,29 +104,25 @@ export default async function handler(req, res) {
 
     if (error) {
       console.error('Supabase error:', error)
-      return res.status(500).json({ 
-        status: 'ERROR', 
-        message: 'Database error' 
+      return res.status(500).json({
+        status: 'ERROR',
+        message: 'Database error'
       })
     }
 
-    // 🔑 Kalau mode=json → balikin JSON (buat display.js)
+    // Return based on mode
     if (mode === 'json') {
-      return res.status(200).json({
-        license_key: data.license_key,
-        expires_at: data.expires_at
-      })
+      return res.status(200).json(data)
+    } else {
+      const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'
+      return res.redirect(302, `${baseUrl}/display?token=${token}`)
     }
 
-    // Default: redirect ke display
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'
-    return res.redirect(302, `${baseUrl}/display?token=${token}`)
-
-  } catch (error) {
-    console.error('Callback API error:', error)
-    res.status(500).json({ 
-      status: 'ERROR', 
-      message: 'Internal server error' 
+  } catch (err) {
+    console.error('Callback API error:', err)
+    res.status(500).json({
+      status: 'ERROR',
+      message: 'Internal server error'
     })
   }
-}
+      }
