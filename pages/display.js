@@ -7,9 +7,9 @@ export default function DisplayKey() {
   const { key } = router.query
   const [status, setStatus] = useState('LOADING')
   const [licenseKey, setLicenseKey] = useState('')
-  const [expires, setExpires] = useState(null)
   const [timeLeft, setTimeLeft] = useState('')
   const [copied, setCopied] = useState(false)
+  const [expireAtClient, setExpireAtClient] = useState(null) // waktu expire 10 menit di client
 
   // Call validate API
   useEffect(() => {
@@ -19,35 +19,38 @@ export default function DisplayKey() {
       .then(data => {
         if (data.status === 'VALID') {
           setLicenseKey(data.license_key)
-          setExpires(data.expires)
           setStatus('VALID')
+
+          // ⏳ set waktu expired di client = sekarang + 10 menit
+          const now = new Date()
+          const clientExpire = new Date(now.getTime() + 10 * 60 * 1000)
+          setExpireAtClient(clientExpire)
         } else {
-          setStatus(data.status) // INVALID or EXPIRED
+          setStatus(data.status) // INVALID / EXPIRED
         }
       })
       .catch(() => setStatus('ERROR'))
   }, [key])
 
-  // Countdown
+  // Countdown untuk 10 menit
   useEffect(() => {
-    if (!expires) return
+    if (!expireAtClient) return
     const update = () => {
       const now = new Date()
-      const exp = new Date(expires)
-      const diff = exp - now
+      const diff = expireAtClient - now
       if (diff <= 0) {
         setTimeLeft('Expired')
         setStatus('EXPIRED')
       } else {
-        const h = Math.floor(diff / (1000 * 60 * 60))
-        const m = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60))
-        setTimeLeft(`${h} hours and ${m} minutes left`)
+        const m = Math.floor(diff / (1000 * 60))
+        const s = Math.floor((diff % (1000 * 60)) / 1000)
+        setTimeLeft(`${m}m ${s}s left`)
       }
     }
     update()
     const interval = setInterval(update, 1000)
     return () => clearInterval(interval)
-  }, [expires])
+  }, [expireAtClient])
 
   const copyKey = async () => {
     try {
@@ -127,4 +130,4 @@ export default function DisplayKey() {
   )
 }
 
-const styles = { /* ... pakai styles lama biar sama persis ... */ }
+const styles = { /* pakai styles lama */ }
