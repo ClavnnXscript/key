@@ -1,11 +1,12 @@
 import { createClient } from '@supabase/supabase-js'
 
+// Gunakan Service Role Key yang benar
 const supabase = createClient(
   process.env.SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE
+  process.env.SUPABASE_SERVICE_ROLE_KEY
 )
 
-// Generate key dengan format seperti Delta X
+// Generate key dengan format FREE_ + 32 karakter
 function generateKey() {
   const chars = 'abcdefghijklmnopqrstuvwxyz0123456789'
   let result = 'FREE_'
@@ -22,7 +23,6 @@ export default async function handler(req, res) {
 
   const { token } = req.query
 
-  // Simple token verification (dummy for now)
   if (!token) {
     return res.status(400).json({ 
       status: 'ERROR', 
@@ -31,22 +31,20 @@ export default async function handler(req, res) {
   }
 
   try {
-    // Generate unique key
     let key
     let keyExists = true
     let attempts = 0
     const maxAttempts = 10
 
-    // Ensure key is unique
+    // Pastikan key unik
     while (keyExists && attempts < maxAttempts) {
       key = generateKey()
-      
       const { data: existingKey } = await supabase
         .from('keys')
-        .select('key')
-        .eq('key', key)
+        .select('license_key')
+        .eq('license_key', key)
         .single()
-      
+
       keyExists = !!existingKey
       attempts++
     }
@@ -58,17 +56,18 @@ export default async function handler(req, res) {
       })
     }
 
-    // Set expiry to 24 hours from now
+    // Set expiry 24 jam dari sekarang
     const expiresAt = new Date()
     expiresAt.setHours(expiresAt.getHours() + 24)
 
-    // Save to Supabase
+    // Simpan ke Supabase
     const { data, error } = await supabase
       .from('keys')
       .insert([
         {
-          key: key,
-          expires_at: expiresAt.toISOString()
+          license_key: key,
+          expires_at: expiresAt.toISOString(),
+          user_id: token
         }
       ])
       .select()
@@ -81,7 +80,7 @@ export default async function handler(req, res) {
       })
     }
 
-    // Redirect langsung ke halaman display key (ini yang bikin UI muncul di PlatoBoost)
+    // Redirect ke halaman display key
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'
     res.redirect(302, `${baseUrl}/display?key=${key}&expires=${encodeURIComponent(expiresAt.toISOString())}`)
 
