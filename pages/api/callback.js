@@ -20,9 +20,8 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' })
   }
 
-  const { token } = req.query
+  const { token, mode } = req.query  // tambah mode untuk kontrol (json/redirect)
 
-  // Simple token verification (dummy for now)
   if (!token) {
     return res.status(400).json({ 
       status: 'ERROR', 
@@ -37,7 +36,6 @@ export default async function handler(req, res) {
     let attempts = 0
     const maxAttempts = 10
 
-    // Ensure key is unique
     while (keyExists && attempts < maxAttempts) {
       key = generateKey()
       
@@ -58,7 +56,7 @@ export default async function handler(req, res) {
       })
     }
 
-    // Set expiry to 24 hours from now
+    // Set expiry 24h
     const expiresAt = new Date()
     expiresAt.setHours(expiresAt.getHours() + 24)
 
@@ -72,6 +70,7 @@ export default async function handler(req, res) {
         }
       ])
       .select()
+      .single()
 
     if (error) {
       console.error('Supabase error:', error)
@@ -81,9 +80,17 @@ export default async function handler(req, res) {
       })
     }
 
-    // Redirect langsung ke halaman display key
+    // 🔑 Kalau mode=json → balikin JSON (buat display.js)
+    if (mode === 'json') {
+      return res.status(200).json({
+        license_key: data.license_key,
+        expires_at: data.expires_at
+      })
+    }
+
+    // Default: redirect ke display
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'
-    res.redirect(302, `${baseUrl}/display?key=${key}&expires=${encodeURIComponent(expiresAt.toISOString())}`)
+    return res.redirect(302, `${baseUrl}/display?token=${token}`)
 
   } catch (error) {
     console.error('Callback API error:', error)
