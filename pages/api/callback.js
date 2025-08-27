@@ -5,7 +5,7 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE
 )
 
-// Generate key with DeltaX-like format
+// Generate key dengan format seperti Delta X
 function generateKey() {
   const chars = 'abcdefghijklmnopqrstuvwxyz0123456789'
   let result = 'FREE_'
@@ -20,72 +20,45 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' })
   }
 
-  const { token, mode } = req.query
+  const { token } = req.query
 
+  // Simple token verification (dummy for now)
   if (!token) {
-    return res.status(400).json({
-      status: 'ERROR',
-      message: 'Token is required'
+    return res.status(400).json({ 
+      status: 'ERROR', 
+      message: 'Token is required' 
     })
   }
 
   try {
-    // 🔒 Check progress first
-    const { data: progress, error: progressError } = await supabase
-      .from('progress')
-      .select('*')
-      .eq('token', token)
-      .single()
-
-    if (progressError || !progress || !progress.step1_done || !progress.step2_done) {
-      return res.status(403).json({
-        status: 'ERROR',
-        message: 'You must complete all steps first'
-      })
-    }
-
-    // 🔑 Check if key already exists for this token
-    const { data: existingKey } = await supabase
-      .from('keys')
-      .select('*')
-      .eq('token', token)
-      .single()
-
-    if (existingKey) {
-      // If key already exists, return it instead of generating new one
-      if (mode === 'json') {
-        return res.status(200).json(existingKey)
-      } else {
-        const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'
-        return res.redirect(302, `${baseUrl}/display?token=${token}`)
-      }
-    }
-
-    // Generate a new unique key
+    // Generate unique key
     let key
     let keyExists = true
     let attempts = 0
     const maxAttempts = 10
 
+    // Ensure key is unique
     while (keyExists && attempts < maxAttempts) {
       key = generateKey()
-      const { data: dupe } = await supabase
+      
+      const { data: existingKey } = await supabase
         .from('keys')
-        .select('license_key')
-        .eq('license_key', key)
+        .select('key')
+        .eq('key', key)
         .single()
-      keyExists = !!dupe
+      
+      keyExists = !!existingKey
       attempts++
     }
 
     if (keyExists) {
-      return res.status(500).json({
-        status: 'ERROR',
-        message: 'Failed to generate unique key'
+      return res.status(500).json({ 
+        status: 'ERROR', 
+        message: 'Failed to generate unique key' 
       })
     }
 
-    // Expire in 24h
+    // Set expiry to 24 hours from now
     const expiresAt = new Date()
     expiresAt.setHours(expiresAt.getHours() + 24)
 
@@ -94,35 +67,29 @@ export default async function handler(req, res) {
       .from('keys')
       .insert([
         {
-          license_key: key,
-          token: token,
+          key: key,
           expires_at: expiresAt.toISOString()
         }
       ])
       .select()
-      .single()
 
     if (error) {
       console.error('Supabase error:', error)
-      return res.status(500).json({
-        status: 'ERROR',
-        message: 'Database error'
+      return res.status(500).json({ 
+        status: 'ERROR', 
+        message: 'Database error' 
       })
     }
 
-    // Return based on mode
-    if (mode === 'json') {
-      return res.status(200).json(data)
-    } else {
-      const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'
-      return res.redirect(302, `${baseUrl}/display?token=${token}`)
-    }
+    // Redirect langsung ke halaman display key
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'
+    res.redirect(302, `${baseUrl}/display?key=${key}&expires=${encodeURIComponent(expiresAt.toISOString())}`)
 
-  } catch (err) {
-    console.error('Callback API error:', err)
-    res.status(500).json({
-      status: 'ERROR',
-      message: 'Internal server error'
+  } catch (error) {
+    console.error('Callback API error:', error)
+    res.status(500).json({ 
+      status: 'ERROR', 
+      message: 'Internal server error' 
     })
   }
-      }
+}
