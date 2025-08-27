@@ -20,39 +20,33 @@ export default async function handler(req, res) {
   }
 
   try {
-    // Get key from Supabase
+    // ✅ kolom di DB namanya license_key (bukan key)
     const { data, error } = await supabase
       .from('keys')
       .select('*')
-      .eq('key', key)
+      .eq('license_key', key)
       .single()
 
     if (error || !data) {
-      // Key not found in database
-      return res.status(200).json({ 
-        status: 'INVALID' 
-      })
+      return res.status(200).json({ status: 'INVALID' })
     }
 
-    // Check if key is expired
     const now = new Date()
     const expiresAt = new Date(data.expires_at)
 
     if (now > expiresAt) {
-      return res.status(200).json({ 
-        status: 'EXPIRED' 
-      })
+      return res.status(200).json({ status: 'EXPIRED' })
     }
 
-    // Key is valid and not expired
-    res.status(200).json({ 
+    return res.status(200).json({ 
       status: 'VALID',
+      license_key: data.license_key,
       expires: data.expires_at
     })
 
   } catch (error) {
     console.error('Validate API error:', error)
-    res.status(500).json({ 
+    return res.status(500).json({ 
       status: 'ERROR', 
       message: 'Internal server error' 
     })
