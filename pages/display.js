@@ -4,6 +4,7 @@ import Head from 'next/head'
 
 export default function DisplayKey() {
   const router = useRouter()
+  const { token } = router.query
   const [key, setKey] = useState(null)
   const [expires, setExpires] = useState(null)
   const [timeLeft, setTimeLeft] = useState('')
@@ -12,8 +13,9 @@ export default function DisplayKey() {
 
   useEffect(() => {
     async function fetchKey() {
+      if (!token) return
       try {
-        const res = await fetch(`/api/callback?token=test123`) // bisa diganti token sesuai logic kamu
+        const res = await fetch(`/api/callback?token=${token}`)
         const data = await res.json()
 
         if (data.license_key) {
@@ -30,7 +32,7 @@ export default function DisplayKey() {
     }
 
     fetchKey()
-  }, [])
+  }, [token])
 
   useEffect(() => {
     if (expires) {
