@@ -1,17 +1,24 @@
 // pages/step2.js
 import { useRouter } from "next/router";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
 export default function Step2() {
   const router = useRouter();
   const { completed } = router.query;
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Redirect back home if query param is missing or invalid
+    if (completed === undefined) return; // wait until query is ready
     if (completed !== "2") {
       router.push("/");
+    } else {
+      setLoading(false);
     }
   }, [completed]);
+
+  if (loading) {
+    return <p style={{ textAlign: "center", marginTop: "50px" }}>Loading...</p>;
+  }
 
   return (
     <div style={{ textAlign: "center", marginTop: "50px" }}>
@@ -33,4 +40,4 @@ export default function Step2() {
       </a>
     </div>
   );
-}
+    }
