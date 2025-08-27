@@ -411,7 +411,7 @@ export default function Home() {
             case 'step2':
                 setBtnContinueText('Redirecting...');
                 const returnUrl2 = `${window.location.origin}/step2?completed=2`;
-                window.location.href = `https://en.shrinke.me/getkey2?return=${encodeURIComponent(returnUrl2)}`;
+                window.location.href = `https://shrinkme.top/getkey2?return=${encodeURIComponent(returnUrl2)}`;
                 break;
             case 'get-your-key':
                 setBtnContinueText('Loading...');
@@ -423,7 +423,7 @@ export default function Home() {
             default:
                 setBtnContinueText('Redirecting...');
                 const returnUrl = `${window.location.origin}/step1?completed=1`;
-                window.location.href = `https://en.shrinke.me/scriptrblx?return=${encodeURIComponent(returnUrl)}`;
+                window.location.href = `https://shrinkme.top/keyget?return=${encodeURIComponent(returnUrl)}`;
         }
     };
 
