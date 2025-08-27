@@ -81,7 +81,7 @@ export default async function handler(req, res) {
       })
     }
 
-    // Redirect langsung ke halaman display key
+    // Redirect langsung ke halaman display key (ini yang bikin UI muncul di PlatoBoost)
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'
     res.redirect(302, `${baseUrl}/display?key=${key}&expires=${encodeURIComponent(expiresAt.toISOString())}`)
 
