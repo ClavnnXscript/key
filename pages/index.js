@@ -29,7 +29,6 @@ export default function Home() {
 
     updateTimer()
     const timer = setInterval(updateTimer, 1000)
-
     return () => clearInterval(timer)
   }, [expires])
 
@@ -39,6 +38,7 @@ export default function Home() {
     setTimeout(() => setCopied(false), 2000)
   }
 
+  // Kalau user buka tanpa key
   if (!key) {
     return (
       <div style={{
@@ -61,16 +61,17 @@ export default function Home() {
         }}>
           <h2 style={{ color: '#e74c3c', marginBottom: '16px' }}>⚠️ Access Denied</h2>
           <p style={{ color: '#666', marginBottom: '20px' }}>
-            You need to complete the verification process to access your key.
+            You need to complete Step 1 and Step 2 before getting your key.
           </p>
           <p style={{ color: '#999', fontSize: '14px' }}>
-            Please start from the beginning and follow all steps.
+            Please start again from the ShrinkMe link.
           </p>
         </div>
       </div>
     )
   }
 
+  // Kalau key sudah expired
   if (isExpired) {
     return (
       <div style={{
@@ -108,6 +109,7 @@ export default function Home() {
     )
   }
 
+  // Kalau key valid
   return (
     <div style={{
       minHeight: '100vh',
@@ -229,4 +231,4 @@ export default function Home() {
       </div>
     </div>
   )
-              }
+          }
