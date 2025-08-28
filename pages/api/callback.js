@@ -1,12 +1,13 @@
+// pages/api/callback.js
 import { createClient } from '@supabase/supabase-js'
 
-// Inisialisasi Supabase
+// Buat client Supabase dengan service role key
 const supabase = createClient(
   process.env.SUPABASE_URL,
   process.env.SUPABASE_SERVICE_ROLE_KEY
 )
 
-// Generate key dengan format FREE_ + 32 karakter random
+// Fungsi generate key unik
 function generateKey() {
   const chars = 'abcdefghijklmnopqrstuvwxyz0123456789'
   let result = 'FREE_'
@@ -17,73 +18,45 @@ function generateKey() {
 }
 
 export default async function handler(req, res) {
+  // Hanya menerima POST dari Platoboost
   if (req.method !== 'POST') {
     return res.status(405).json({ status: 'ERROR', message: 'Method not allowed' })
   }
 
+  const { user_id } = req.body
+
+  if (!user_id) {
+    return res.status(400).json({ status: 'ERROR', message: 'Missing user_id' })
+  }
+
   try {
-    // ⚠️ TODO: validasi callback Platoboost
-    // Contoh: cek req.headers['platoboost-token'] atau req.body.token
-    // Jika tidak valid → return 403
+    // Generate key unik
+    const key = generateKey()
 
-    // Generate unique key
-    let key
-    let keyExists = true
-    let attempts = 0
-    const maxAttempts = 10
-
-    while (keyExists && attempts < maxAttempts) {
-      key = generateKey()
-      const { data: existingKey, error: selectError } = await supabase
-        .from('keys')
-        .select('license_key')
-        .eq('license_key', key)
-        .single()
-
-      if (selectError && selectError.code !== 'PGRST116') { // PGRST116 = no rows found
-        console.error('Supabase select error:', selectError)
-        return res.status(500).json({ status: 'ERROR', message: 'Database error (select)' })
-      }
-
-      keyExists = !!existingKey
-      attempts++
-    }
-
-    if (keyExists) {
-      return res.status(500).json({
-        status: 'ERROR',
-        message: 'Failed to generate unique key'
-      })
-    }
-
-    // Set expiry 8 menit dari sekarang
+    // Set expiry, misal 8 menit dari sekarang
     const expiresAt = new Date()
     expiresAt.setMinutes(expiresAt.getMinutes() + 8)
 
-    // Insert ke Supabase
-    const { data, error: insertError } = await supabase
+    // Simpan ke Supabase
+    const { error } = await supabase
       .from('keys')
       .insert([
-        {
-          license_key: key,
-          expires_at: expiresAt.toISOString()
-        }
+        { license_key: key, user_id, expires_at: expiresAt.toISOString() }
       ])
 
-    if (insertError) {
-      console.error('Supabase insert error:', insertError)
-      return res.status(500).json({ status: 'ERROR', message: 'Database error (insert)' })
+    if (error) {
+      console.error('Supabase insert error:', error)
+      return res.status(500).json({ status: 'ERROR', message: 'Database error' })
     }
 
-    // Response JSON ke Platoboost
+    // Kirim response JSON ke Platoboost
     return res.status(200).json({
       status: 'OK',
       key,
       expires_at: expiresAt.toISOString()
     })
-
-  } catch (error) {
-    console.error('Callback API error:', error)
+  } catch (err) {
+    console.error(err)
     return res.status(500).json({ status: 'ERROR', message: 'Internal server error' })
   }
 }
