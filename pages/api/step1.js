@@ -1,14 +1,15 @@
 // pages/api/step1.js
 import { createClient } from '@supabase/supabase-js'
+import crypto from 'crypto'
 
 const supabase = createClient(
   process.env.SUPABASE_URL,
   process.env.SUPABASE_SERVICE_ROLE_KEY
 )
 
-// Generate unique session ID
-function generateSessionId() {
-  return 'sess_' + Math.random().toString(36).substr(2, 16) + Date.now().toString(36)
+// Generate token unik
+function generateToken() {
+  return crypto.randomBytes(24).toString('hex')
 }
 
 export default async function handler(req, res) {
@@ -16,41 +17,28 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' })
   }
 
-  // Verify secret key
-  const { secret } = req.query
-  if (secret !== 'pocof654') {
-    return res.status(403).json({ error: 'Unauthorized access' })
-  }
-
   try {
-    const sessionId = generateSessionId()
-    const userIP = req.headers['x-forwarded-for'] || req.connection.remoteAddress || 'unknown'
-    
-    // Create new session in database
+    const token = generateToken()
+
+    // Expired 15 menit
+    const expiresAt = new Date()
+    expiresAt.setMinutes(expiresAt.getMinutes() + 15)
+
     const { error } = await supabase
-      .from('sessions')
-      .insert([{
-        session_id: sessionId,
-        user_ip: userIP,
-        step1_complete: true,
-        step2_complete: false,
-        created_at: new Date().toISOString(),
-        used: false
-      }])
+      .from('tokens')
+      .insert([{ token, expires_at: expiresAt.toISOString(), used: false }])
 
     if (error) {
-      console.error('Database error:', error)
+      console.error('Token insert error:', error)
       return res.status(500).json({ error: 'Database error' })
     }
 
-    // Set session cookie
-    res.setHeader('Set-Cookie', `session_id=${sessionId}; Path=/; HttpOnly; Max-Age=600`); // 10 minutes
-    
-    // Redirect to second ShrinkMe link
-    const shrinkmeLink2 = `https://en.shrinke.me/c99niw`
-    
-    return res.redirect(302, shrinkmeLink2)
+    // Redirect ke halaman continue
+    const baseUrl = req.headers.host.includes('localhost')
+      ? `http://${req.headers.host}`
+      : `https://${req.headers.host}`
 
+    return res.redirect(302, `${baseUrl}/continue?token=${token}`)
   } catch (err) {
     console.error('Step1 error:', err)
     return res.status(500).json({ error: 'Internal server error' })
