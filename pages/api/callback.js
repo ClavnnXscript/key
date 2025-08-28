@@ -1,12 +1,11 @@
 import { createClient } from '@supabase/supabase-js'
 
-// Gunakan Service Role Key yang benar
 const supabase = createClient(
   process.env.SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_KEY
+  process.env.SUPABASE_SERVICE_ROLE
 )
 
-// Generate key dengan format FREE_ + 32 karakter
+// Generate key dengan format FREE_ + 32 karakter random
 function generateKey() {
   const chars = 'abcdefghijklmnopqrstuvwxyz0123456789'
   let result = 'FREE_'
@@ -21,22 +20,13 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' })
   }
 
-  const { token } = req.query
-
-  if (!token) {
-    return res.status(400).json({ 
-      status: 'ERROR', 
-      message: 'Token is required' 
-    })
-  }
-
   try {
+    // Generate unique key
     let key
     let keyExists = true
     let attempts = 0
     const maxAttempts = 10
 
-    // Pastikan key unik
     while (keyExists && attempts < maxAttempts) {
       key = generateKey()
       const { data: existingKey } = await supabase
@@ -50,15 +40,15 @@ export default async function handler(req, res) {
     }
 
     if (keyExists) {
-      return res.status(500).json({ 
-        status: 'ERROR', 
-        message: 'Failed to generate unique key' 
+      return res.status(500).json({
+        status: 'ERROR',
+        message: 'Failed to generate unique key'
       })
     }
 
-    // Set expiry 24 jam dari sekarang
+    // Set expiry ke 8 menit dari sekarang
     const expiresAt = new Date()
-    expiresAt.setHours(expiresAt.getHours() + 24)
+    expiresAt.setMinutes(expiresAt.getMinutes() + 8)
 
     // Simpan ke Supabase
     const { data, error } = await supabase
@@ -66,17 +56,16 @@ export default async function handler(req, res) {
       .insert([
         {
           license_key: key,
-          expires_at: expiresAt.toISOString(),
-          user_id: token
+          expires_at: expiresAt.toISOString()
         }
       ])
       .select()
 
     if (error) {
       console.error('Supabase error:', error)
-      return res.status(500).json({ 
-        status: 'ERROR', 
-        message: 'Database error' 
+      return res.status(500).json({
+        status: 'ERROR',
+        message: 'Database error'
       })
     }
 
@@ -86,9 +75,9 @@ export default async function handler(req, res) {
 
   } catch (error) {
     console.error('Callback API error:', error)
-    res.status(500).json({ 
-      status: 'ERROR', 
-      message: 'Internal server error' 
+    res.status(500).json({
+      status: 'ERROR',
+      message: 'Internal server error'
     })
   }
 }
