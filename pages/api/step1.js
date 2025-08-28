@@ -43,9 +43,11 @@ export default async function handler(req, res) {
       return res.status(500).json({ error: 'Database error' })
     }
 
+    // Set session cookie
+    res.setHeader('Set-Cookie', `session_id=${sessionId}; Path=/; HttpOnly; Max-Age=600`); // 10 minutes
+    
     // Redirect to second ShrinkMe link
-    // GANTI dengan URL ShrinkMe kedua Anda
-    const shrinkmeLink2 = `https://shrinkme.io/YOUR_SECOND_LINK_HERE?session=${sessionId}`
+    const shrinkmeLink2 = `https://en.shrinke.me/c99niw`
     
     return res.redirect(302, shrinkmeLink2)
 
@@ -53,4 +55,4 @@ export default async function handler(req, res) {
     console.error('Step1 error:', err)
     return res.status(500).json({ error: 'Internal server error' })
   }
-        }
+}
