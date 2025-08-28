@@ -12,8 +12,19 @@ export default async function handler(req, res) {
   }
 
   const { session } = req.query
+  
+  // Get session from cookie if not in query
+  let sessionId = session
+  if (!sessionId) {
+    const cookies = req.headers.cookie?.split(';').reduce((acc, cookie) => {
+      const [key, value] = cookie.trim().split('=')
+      acc[key] = value
+      return acc
+    }, {})
+    sessionId = cookies?.session_id
+  }
 
-  if (!session) {
+  if (!sessionId) {
     return res.status(400).json({ error: 'Session ID required' })
   }
 
@@ -24,7 +35,7 @@ export default async function handler(req, res) {
     const { data: sessionData, error: fetchError } = await supabase
       .from('sessions')
       .select('*')
-      .eq('session_id', session)
+      .eq('session_id', sessionId)
       .eq('used', false)
       .single()
 
@@ -58,7 +69,7 @@ export default async function handler(req, res) {
         step2_complete: true,
         step2_completed_at: new Date().toISOString()
       })
-      .eq('session_id', session)
+      .eq('session_id', sessionId)
 
     if (updateError) {
       console.error('Update error:', updateError)
@@ -70,7 +81,7 @@ export default async function handler(req, res) {
       ? `http://${req.headers.host}`
       : `https://${req.headers.host}`
     
-    const callbackUrl = `${baseUrl}/api/callback?session=${session}`
+    const callbackUrl = `${baseUrl}/api/callback?session=${sessionId}`
     
     return res.redirect(302, callbackUrl)
 
