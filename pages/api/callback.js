@@ -1,8 +1,9 @@
 import { createClient } from '@supabase/supabase-js'
 
+// Inisialisasi Supabase
 const supabase = createClient(
   process.env.SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE
+  process.env.SUPABASE_SERVICE_ROLE_KEY
 )
 
 // Generate key dengan format FREE_ + 32 karakter random
@@ -16,11 +17,15 @@ function generateKey() {
 }
 
 export default async function handler(req, res) {
-  if (req.method !== 'GET') {
-    return res.status(405).json({ error: 'Method not allowed' })
+  if (req.method !== 'POST') {
+    return res.status(405).json({ status: 'ERROR', message: 'Method not allowed' })
   }
 
   try {
+    // ⚠️ TODO: validasi callback Platoboost
+    // Contoh: cek req.headers['platoboost-token'] atau req.body.token
+    // Jika tidak valid → return 403
+
     // Generate unique key
     let key
     let keyExists = true
@@ -29,11 +34,16 @@ export default async function handler(req, res) {
 
     while (keyExists && attempts < maxAttempts) {
       key = generateKey()
-      const { data: existingKey } = await supabase
+      const { data: existingKey, error: selectError } = await supabase
         .from('keys')
         .select('license_key')
         .eq('license_key', key)
         .single()
+
+      if (selectError && selectError.code !== 'PGRST116') { // PGRST116 = no rows found
+        console.error('Supabase select error:', selectError)
+        return res.status(500).json({ status: 'ERROR', message: 'Database error (select)' })
+      }
 
       keyExists = !!existingKey
       attempts++
@@ -46,12 +56,12 @@ export default async function handler(req, res) {
       })
     }
 
-    // Set expiry ke 8 menit dari sekarang
+    // Set expiry 8 menit dari sekarang
     const expiresAt = new Date()
     expiresAt.setMinutes(expiresAt.getMinutes() + 8)
 
-    // Simpan ke Supabase
-    const { data, error } = await supabase
+    // Insert ke Supabase
+    const { data, error: insertError } = await supabase
       .from('keys')
       .insert([
         {
@@ -59,25 +69,21 @@ export default async function handler(req, res) {
           expires_at: expiresAt.toISOString()
         }
       ])
-      .select()
 
-    if (error) {
-      console.error('Supabase error:', error)
-      return res.status(500).json({
-        status: 'ERROR',
-        message: 'Database error'
-      })
+    if (insertError) {
+      console.error('Supabase insert error:', insertError)
+      return res.status(500).json({ status: 'ERROR', message: 'Database error (insert)' })
     }
 
-    // Redirect ke halaman display key
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'
-    res.redirect(302, `${baseUrl}/display?key=${key}&expires=${encodeURIComponent(expiresAt.toISOString())}`)
+    // Response JSON ke Platoboost
+    return res.status(200).json({
+      status: 'OK',
+      key,
+      expires_at: expiresAt.toISOString()
+    })
 
   } catch (error) {
     console.error('Callback API error:', error)
-    res.status(500).json({
-      status: 'ERROR',
-      message: 'Internal server error'
-    })
+    return res.status(500).json({ status: 'ERROR', message: 'Internal server error' })
   }
 }
