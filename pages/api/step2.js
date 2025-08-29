@@ -11,6 +11,10 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' })
   }
 
+  // Debug: Log semua yang diterima
+  console.log('Query params:', req.query)
+  console.log('Headers cookie:', req.headers.cookie)
+
   // Ambil token dari query parameter atau cookie
   let token = req.query.token
 
@@ -21,11 +25,20 @@ export default async function handler(req, res) {
       acc[key] = value
       return acc
     }, {})
+    console.log('Parsed cookies:', cookies)
     token = cookies?.auth_token
   }
 
+  console.log('Final token:', token)
+
   if (!token) {
-    return res.status(400).json({ error: 'Token required' })
+    return res.status(400).json({ 
+      error: 'Token required',
+      debug: {
+        query: req.query,
+        cookies: req.headers.cookie
+      }
+    })
   }
 
   try {
