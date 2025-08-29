@@ -15,8 +15,12 @@ export default function Continue() {
 
   const handleContinue = () => {
     if (!token) return
-    // arahkan ke ShrinkMe Step2 dengan token dibawa
-    const shrinkmeLink = `https://en.shrinke.me/c99niw?token=${token}`
+    
+    // Set token ke cookie sebelum redirect
+    document.cookie = `auth_token=${token}; path=/; max-age=900; SameSite=Lax`; // 15 minutes
+    
+    // Redirect ke ShrinkMe Step2 TANPA parameter
+    const shrinkmeLink = `https://en.shrinke.me/c99niw`
     window.location.href = shrinkmeLink
   }
 
