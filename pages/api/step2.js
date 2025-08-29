@@ -11,8 +11,18 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' })
   }
 
-  // Ambil token dari query
-  const { token } = req.query
+  // Ambil token dari query parameter atau cookie
+  let token = req.query.token
+
+  if (!token) {
+    // Fallback: baca dari cookie
+    const cookies = req.headers.cookie?.split(';').reduce((acc, cookie) => {
+      const [key, value] = cookie.trim().split('=')
+      acc[key] = value
+      return acc
+    }, {})
+    token = cookies?.auth_token
+  }
 
   if (!token) {
     return res.status(400).json({ error: 'Token required' })
