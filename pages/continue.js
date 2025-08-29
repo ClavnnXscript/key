@@ -1,4 +1,4 @@
-// pages/continue.js
+// pages/continue.js - MODIFIKASI
 import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
 
@@ -13,15 +13,15 @@ export default function Continue() {
     }
   }, [token])
 
-  const handleContinue = () => {
+  const handleContinueStep2 = () => {
     if (!token) return
     
-    // Set token ke cookie sebelum redirect
-    document.cookie = `auth_token=${token}; path=/; max-age=900; SameSite=Lax`; // 15 minutes
+    // PENTING: Simpan token untuk nanti recovery
+    localStorage.setItem('step1_token', token)
     
-    // Redirect ke ShrinkMe Step2 TANPA parameter
-    const shrinkmeLink = `https://en.shrinke.me/c99niw`
-    window.location.href = shrinkmeLink
+    // Redirect ke ShrinkMe Step 2 - TANPA parameter (akan hilang)
+    const shrinkmeStep2 = `https://en.shrinke.me/c99niw`
+    window.location.href = shrinkmeStep2
   }
 
   if (!valid) {
@@ -46,7 +46,7 @@ export default function Continue() {
         }}>
           <h2 style={{ color: '#e74c3c', marginBottom: '16px' }}>⚠️ Invalid Access</h2>
           <p style={{ color: '#666', marginBottom: '20px' }}>
-            You must start from Step 1 to continue.
+            You must complete Step 1 first.
           </p>
         </div>
       </div>
@@ -72,14 +72,38 @@ export default function Continue() {
         maxWidth: '500px',
         width: '100%'
       }}>
-        <h1 style={{ color: '#2d3748', marginBottom: '16px', fontSize: '24px', fontWeight: '700' }}>
-          ✅ Step 1 Completed
+        {/* Progress */}
+        <div style={{
+          backgroundColor: '#e6fffa',
+          padding: '15px',
+          borderRadius: '12px',
+          marginBottom: '25px',
+          border: '2px solid #4fd1c7'
+        }}>
+          <div style={{ fontSize: '14px', color: '#2d5a57', marginBottom: '8px' }}>
+            Progress:
+          </div>
+          <div style={{ fontSize: '16px', color: '#319795', fontWeight: '600' }}>
+            ✅ Step 1 Completed<br/>
+            ⏳ Ready for Step 2
+          </div>
+        </div>
+
+        <h1 style={{ 
+          color: '#2d3748', 
+          marginBottom: '16px', 
+          fontSize: '24px', 
+          fontWeight: '700' 
+        }}>
+          🚀 Ready for Step 2
         </h1>
+        
         <p style={{ color: '#718096', marginBottom: '24px' }}>
-          Now continue to Step 2 to verify and claim your key.
+          You've completed Step 1! Now continue to Step 2 to complete the verification process.
         </p>
+
         <button
-          onClick={handleContinue}
+          onClick={handleContinueStep2}
           style={{
             backgroundColor: '#4299e1',
             color: 'white',
@@ -93,8 +117,17 @@ export default function Continue() {
             transition: 'all 0.2s'
           }}
         >
-          🚀 Continue to Step 2
+          🔗 Continue Step 2
         </button>
+
+        <div style={{
+          fontSize: '13px',
+          color: '#a0aec0',
+          marginTop: '20px',
+          lineHeight: '1.4'
+        }}>
+          <p>⚠️ Keep this tab open while completing Step 2</p>
+        </div>
       </div>
     </div>
   )
