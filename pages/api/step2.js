@@ -1,80 +1,46 @@
-// pages/api/step2.js
+// pages/api/step2.js - MODIFIKASI TOTAL
 import { createClient } from '@supabase/supabase-js'
+import crypto from 'crypto'
 
-const supabase = createClient(
-  process.env.SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_KEY
-)
+const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY)
+
+function generateToken() {
+  return crypto.randomBytes(24).toString('hex')
+}
 
 export default async function handler(req, res) {
   if (req.method !== 'GET') {
     return res.status(405).json({ error: 'Method not allowed' })
   }
 
-  // Debug: Log semua yang diterima
-  console.log('Query params:', req.query)
-  console.log('Headers cookie:', req.headers.cookie)
-
-  // Ambil token dari query parameter atau cookie
-  let token = req.query.token
-
-  if (!token) {
-    // Fallback: baca dari cookie
-    const cookies = req.headers.cookie?.split(';').reduce((acc, cookie) => {
-      const [key, value] = cookie.trim().split('=')
-      acc[key] = value
-      return acc
-    }, {})
-    console.log('Parsed cookies:', cookies)
-    token = cookies?.auth_token
-  }
-
-  console.log('Final token:', token)
-
-  if (!token) {
-    return res.status(400).json({ 
-      error: 'Token required',
-      debug: {
-        query: req.query,
-        cookies: req.headers.cookie
-      }
-    })
-  }
-
   try {
-    // Cek token valid, belum dipakai, belum expired
-    const { data: tokenData, error: fetchError } = await supabase
-      .from('tokens')
-      .select('*')
-      .eq('token', token)
-      .eq('used', false)
-      .single()
+    console.log('=== STEP2: User completed ShrinkMe Step 2 ===')
+    
+    // Generate TOKEN KEDUA (untuk halaman generate key)
+    const generateToken2 = generateToken()
+    const expiresAt = new Date()
+    expiresAt.setMinutes(expiresAt.getMinutes() + 30) // 30 menit untuk generate key
 
-    if (fetchError || !tokenData) {
-      return res.status(400).json({ error: 'Invalid or expired token' })
+    // Simpan token kedua ke database
+    const { error } = await supabase
+      .from('generate_tokens') // tabel berbeda untuk token generate
+      .insert([{ 
+        token: generateToken2, 
+        expires_at: expiresAt.toISOString(), 
+        used: false 
+      }])
+
+    if (error) {
+      console.error('Generate token insert error:', error)
+      return res.status(500).json({ error: 'Database error' })
     }
 
-    // Cek expired (max 15 menit)
-    const now = new Date()
-    const expiresAt = new Date(tokenData.expires_at)
-    if (now > expiresAt) {
-      return res.status(400).json({ error: 'Token expired' })
-    }
-
-    // Tandai token sudah dipakai
-    await supabase
-      .from('tokens')
-      .update({ used: true })
-      .eq('id', tokenData.id)
-
-    // Redirect ke callback.js untuk generate key
+    // Redirect ke halaman "Generate Your Key" dengan token kedua
     const baseUrl = req.headers.host.includes('localhost')
-      ? `http://${req.headers.host}`
-      : `https://${req.headers.host}`
+      ? `http://${req.headers.host}` : `https://${req.headers.host}`
 
-    const callbackUrl = `${baseUrl}/api/callback?token=${token}`
-    return res.redirect(302, callbackUrl)
-
+    return res.redirect(302, `${baseUrl}/generate?token=${generateToken2}`)
+    
   } catch (err) {
     console.error('Step2 error:', err)
     return res.status(500).json({ error: 'Internal server error' })
