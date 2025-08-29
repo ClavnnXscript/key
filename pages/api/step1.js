@@ -20,9 +20,9 @@ export default async function handler(req, res) {
   try {
     const token = generateToken()
 
-    // Expired 15 menit
+    // Expired 1 jam (bukan 15 menit)
     const expiresAt = new Date()
-    expiresAt.setMinutes(expiresAt.getMinutes() + 15)
+    expiresAt.setHours(expiresAt.getHours() + 1)
 
     const { error } = await supabase
       .from('tokens')
@@ -30,7 +30,10 @@ export default async function handler(req, res) {
 
     if (error) {
       console.error('Token insert error:', error)
-      return res.status(500).json({ error: 'Database error' })
+      return res.status(500).json({ 
+        error: 'Database error',
+        details: error.message 
+      })
     }
 
     // Redirect ke halaman continue
