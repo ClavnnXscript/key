@@ -7,16 +7,32 @@ export default function Continue() {
 
   if (!token) {
     return (
-      <div style={{ textAlign: 'center', marginTop: '50px' }}>
-        <h2>⚠️ Invalid access</h2>
-        <p>You must start from Step 1.</p>
+      <div style={{
+        minHeight: '100vh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        fontFamily: 'sans-serif',
+        background: 'linear-gradient(135deg, #ff9a9e 0%, #fad0c4 100%)'
+      }}>
+        <div style={{
+          background: 'white',
+          padding: '40px',
+          borderRadius: '20px',
+          boxShadow: '0 10px 30px rgba(0,0,0,0.1)',
+          textAlign: 'center',
+          maxWidth: '400px',
+          width: '100%'
+        }}>
+          <h2 style={{ color: '#e53e3e', marginBottom: '16px' }}>⚠️ Token Missing</h2>
+          <p>Please restart the process from Step 1.</p>
+        </div>
       </div>
     )
   }
 
-  const handleContinue = () => {
-    router.push(`/api/step2?token=${token}`)
-  }
+  // ShrinkMe Step2 link kamu
+  const shrinkMeStep2 = `https://en.shrinke.me/c99niw?token=${token}`
 
   return (
     <div style={{
@@ -24,40 +40,41 @@ export default function Continue() {
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
-      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
       fontFamily: 'sans-serif',
-      padding: '20px'
+      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
     }}>
       <div style={{
-        backgroundColor: 'white',
+        background: 'white',
         padding: '40px',
         borderRadius: '20px',
-        boxShadow: '0 20px 40px rgba(0,0,0,0.1)',
+        boxShadow: '0 10px 30px rgba(0,0,0,0.1)',
         textAlign: 'center',
-        maxWidth: '400px',
+        maxWidth: '450px',
         width: '100%'
       }}>
-        <h2 style={{ marginBottom: '20px', color: '#2d3748' }}>Step 1 Complete 🎉</h2>
-        <p style={{ marginBottom: '20px', color: '#4a5568' }}>
-          Click the button below to continue to Step 2 and claim your key.
+        <h1 style={{ marginBottom: '16px', color: '#2d3748' }}>✅ Step 1 Completed</h1>
+        <p style={{ color: '#4a5568', marginBottom: '24px' }}>
+          Great job! Now click the button below to continue to Step 2.
         </p>
-        <button
-          onClick={handleContinue}
+
+        <a
+          href={shrinkMeStep2}
           style={{
+            display: 'inline-block',
+            padding: '14px 28px',
             backgroundColor: '#4299e1',
             color: 'white',
-            padding: '15px 30px',
             borderRadius: '12px',
-            border: 'none',
-            fontSize: '16px',
             fontWeight: '600',
-            cursor: 'pointer',
-            width: '100%'
+            textDecoration: 'none',
+            transition: 'background 0.2s'
           }}
+          onMouseOver={(e) => e.target.style.backgroundColor = '#3182ce'}
+          onMouseOut={(e) => e.target.style.backgroundColor = '#4299e1'}
         >
-          Continue Step 2 ➡️
-        </button>
+          Continue Step 2 🚀
+        </a>
       </div>
     </div>
   )
-          }
+            }
