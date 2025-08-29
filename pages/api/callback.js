@@ -1,66 +1,81 @@
 // pages/api/callback.js
 import { createClient } from '@supabase/supabase-js'
-import crypto from 'crypto'
 
 const supabase = createClient(
   process.env.SUPABASE_URL,
   process.env.SUPABASE_SERVICE_ROLE_KEY
 )
 
+// Generate license key unik
 function generateKey() {
-  return 'FREE_' + crypto.randomBytes(16).toString('hex')
+  const chars = 'abcdefghijklmnopqrstuvwxyz0123456789'
+  let result = 'FREE_'
+  for (let i = 0; i < 32; i++) {
+    result += chars.charAt(Math.floor(Math.random() * chars.length))
+  }
+  return result
 }
 
 export default async function handler(req, res) {
+  if (req.method !== 'GET') {
+    return res.status(405).json({ error: 'Method not allowed' })
+  }
+
   const { token } = req.query
   if (!token) {
     return res.status(400).json({ error: 'Token required' })
   }
 
   try {
-    // Validasi token
-    const { data: tokenData, error } = await supabase
+    // Cek token valid
+    const { data: tokenData, error: fetchError } = await supabase
       .from('tokens')
       .select('*')
       .eq('token', token)
-      .eq('used', false)
+      .eq('used', true) // harus sudah dipakai di step2
       .single()
 
-    if (error || !tokenData) {
-      return res.status(400).json({ error: 'Invalid or expired token' })
+    if (fetchError || !tokenData) {
+      return res.status(400).json({ error: 'Invalid token' })
     }
 
+    // Pastikan token belum expired
     const now = new Date()
-    if (new Date(tokenData.expires_at) < now) {
+    const expiresAt = new Date(tokenData.expires_at)
+    if (now > expiresAt) {
       return res.status(400).json({ error: 'Token expired' })
     }
 
-    // Tandai token sudah dipakai
-    await supabase
-      .from('tokens')
-      .update({ used: true })
-      .eq('token', token)
-
-    // Generate key baru (24 jam expired)
+    // Generate key baru
     const key = generateKey()
-    const expiresAt = new Date()
-    expiresAt.setHours(expiresAt.getHours() + 24)
+    const keyExpiresAt = new Date()
+    keyExpiresAt.setHours(keyExpiresAt.getHours() + 24) // 24 jam aktif
 
-    const { error: keyError } = await supabase
+    // Simpan ke tabel keys
+    const { error: insertError } = await supabase
       .from('keys')
-      .insert([{ license_key: key, expires_at: expiresAt.toISOString(), used: false }])
+      .insert([
+        {
+          license_key: key,
+          user_id: tokenData.id, // bisa simpan token id sebagai user_id
+          expires_at: keyExpiresAt.toISOString(),
+          used: false
+        }
+      ])
 
-    if (keyError) {
-      console.error('Key insert error:', keyError)
+    if (insertError) {
+      console.error('Insert key error:', insertError)
       return res.status(500).json({ error: 'Database error' })
     }
 
-    // Redirect ke index dengan key
+    // Redirect ke halaman index.js untuk menampilkan key
     const baseUrl = req.headers.host.includes('localhost')
       ? `http://${req.headers.host}`
       : `https://${req.headers.host}`
 
-    return res.redirect(302, `${baseUrl}/?key=${key}&expires=${expiresAt.toISOString()}`)
+    const displayUrl = `${baseUrl}/?key=${key}&expires=${keyExpiresAt.toISOString()}`
+    return res.redirect(302, displayUrl)
+
   } catch (err) {
     console.error('Callback error:', err)
     return res.status(500).json({ error: 'Internal server error' })
