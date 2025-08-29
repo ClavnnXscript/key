@@ -110,7 +110,7 @@ export default function Homepage() {
           </div>
 
           <a href="https://en.shrinke.me/c99ni" className="main-button">
-            🚀 Get Free License Key
+            🚀 Complete the step
           </a>
 
           <div className="discord-section">
