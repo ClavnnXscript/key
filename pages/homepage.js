@@ -73,6 +73,23 @@ export default function Homepage() {
             transition: all 0.3s ease;
         }
         .discord-button:hover { background: #4752c4; transform: translateY(-2px); }
+        .tutorial-section { background: rgba(255, 87, 51, 0.1); border: 2px solid rgba(255, 87, 51, 0.2); border-radius: 20px; padding: 25px; margin-top: 30px; }
+        .tutorial-title { font-size: 1.3rem; font-weight: 700; color: #ff5733; margin-bottom: 8px; display: flex; align-items: center; justify-content: center; gap: 10px; }
+        .tutorial-desc { color: #6b7280; font-size: 1rem; margin-bottom: 20px; line-height: 1.5; }
+        .tutorial-button {
+            background: #ff5733;
+            color: white;
+            padding: 12px 28px;
+            border-radius: 25px;
+            font-size: 1rem;
+            font-weight: 600;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s ease;
+        }
+        .tutorial-button:hover { background: #e04527; transform: translateY(-2px); }
         .steps { background: rgba(255, 255, 255, 0.6); border-radius: 15px; padding: 25px; margin: 30px 0; border: 1px solid rgba(0, 0, 0, 0.1); }
         .steps-title { font-size: 1.2rem; font-weight: 700; color: #2d3748; margin-bottom: 15px; }
         .step { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; color: #4a5568; font-size: 0.95rem; }
@@ -113,6 +130,16 @@ export default function Homepage() {
             🚀 Complete the step
           </a>
 
+          <div className="tutorial-section">
+            <div className="tutorial-title">Watch Tutorial</div>
+            <div className="tutorial-desc">
+              Need help getting your key? Watch our step-by-step tutorial to learn how to generate your license key easily!
+            </div>
+            <a href="https://youtu.be/ygUpx2VuoGc?si=y3_Gq5UOqBtLNkO3" target="_blank" className="tutorial-button">
+              📺 Watch the tutorial for get key
+            </a>
+          </div>
+
           <div className="discord-section">
             <div className="discord-title">Join Our Community</div>
             <div className="discord-desc">
@@ -126,4 +153,4 @@ export default function Homepage() {
       </div>
     </>
   );
-  }
+}
