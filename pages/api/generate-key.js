@@ -1,3 +1,4 @@
+// pages/api/generate-key.js
 import { createClient } from '@supabase/supabase-js'
 
 const supabase = createClient(
@@ -53,8 +54,16 @@ export default async function handler(req, res) {
 
     // Generate license key
     const key = generateKey()
-    const keyExpiresAt = new Date()
-    keyExpiresAt.setHours(keyExpiresAt.getHours() + 24) // 24 jam
+    
+    // FIX: Gunakan milliseconds untuk presisi UTC yang tepat
+    const keyExpiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000) // +24 jam dalam milliseconds
+
+    console.log('=== GENERATE-KEY DEBUG ===')
+    console.log('Key generated:', key)
+    console.log('Current time (UTC):', new Date().toISOString())
+    console.log('Expires at (UTC):', keyExpiresAt.toISOString())
+    console.log('Expires at (Local):', keyExpiresAt.toString())
+    console.log('Valid duration (hours):', 24)
 
     // Simpan ke tabel keys
     const { error: insertError } = await supabase
@@ -67,17 +76,23 @@ export default async function handler(req, res) {
       }])
 
     if (insertError) {
+      console.error('Insert key error:', insertError)
       return res.status(500).json({ error: 'Database error' })
     }
 
     // Return key data (bukan redirect)
     return res.status(200).json({
       key: key,
-      expires: keyExpiresAt.toISOString()
+      expires: keyExpiresAt.toISOString(),
+      debug: {
+        generated_at: new Date().toISOString(),
+        expires_at: keyExpiresAt.toISOString(),
+        valid_for_hours: 24
+      }
     })
 
   } catch (err) {
     console.error('Generate key error:', err)
     return res.status(500).json({ error: 'Internal server error' })
   }
-      }
+                  }
