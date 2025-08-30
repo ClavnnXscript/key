@@ -30,17 +30,38 @@ export default async function handler(req, res) {
       return res.status(200).json({ status: 'INVALID' })
     }
 
-    const now = new Date()
-    const expiresAt = new Date(data.expires_at)
+    // FIX: Gunakan UTC untuk semua comparison
+    const now = new Date() // Current time
+    const expiresAt = new Date(data.expires_at) // Database time (sudah UTC)
+    
+    console.log('=== TIMEZONE DEBUG ===')
+    console.log('Current UTC:', now.toISOString())
+    console.log('Expires UTC:', expiresAt.toISOString())
+    console.log('Current Local:', now.toString())
+    console.log('Expires Local:', expiresAt.toString())
+    console.log('Expired?:', now > expiresAt)
 
     if (now > expiresAt) {
-      return res.status(200).json({ status: 'EXPIRED' })
+      return res.status(200).json({ 
+        status: 'EXPIRED',
+        debug: {
+          current_utc: now.toISOString(),
+          expires_utc: expiresAt.toISOString(),
+          expired: true
+        }
+      })
     }
 
     return res.status(200).json({ 
       status: 'VALID',
       license_key: data.license_key,
-      expires: data.expires_at
+      expires: data.expires_at,
+      debug: {
+        current_utc: now.toISOString(),
+        expires_utc: expiresAt.toISOString(),
+        time_left_minutes: Math.round((expiresAt - now) / (1000 * 60)),
+        expired: false
+      }
     })
 
   } catch (error) {
