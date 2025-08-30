@@ -48,8 +48,15 @@ export default async function handler(req, res) {
 
     // Generate key baru
     const key = generateKey()
+    
+    // FIX: Gunakan UTC untuk konsistensi timezone
     const keyExpiresAt = new Date()
-    keyExpiresAt.setHours(keyExpiresAt.getHours() + 24) // 24 jam aktif
+    keyExpiresAt.setUTCHours(keyExpiresAt.getUTCHours() + 24) // 24 jam aktif (UTC)
+
+    console.log('=== CALLBACK DEBUG ===')
+    console.log('Key generated:', key)
+    console.log('Expires at (UTC):', keyExpiresAt.toISOString())
+    console.log('Expires at (Local):', keyExpiresAt.toString())
 
     // Simpan ke tabel keys
     const { error: insertError } = await supabase
