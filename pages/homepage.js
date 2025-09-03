@@ -135,7 +135,7 @@ export default function Homepage() {
             <div className="tutorial-desc">
               Need help getting your key? Watch our step-by-step tutorial to learn how to generate your license key easily!
             </div>
-            <a href="https://youtu.be/ygUpx2VuoGc?si=y3_Gq5UOqBtLNkO3" target="_blank" className="tutorial-button">
+            <a href="https://linktr.ee/ClavnnX" target="_blank" className="tutorial-button">
               📺 Watch the tutorial for get key
             </a>
           </div>
